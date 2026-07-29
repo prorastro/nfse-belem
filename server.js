@@ -83,34 +83,41 @@ function assinarDPS(xml, refId) {
   return sig.getSignedXml();
 }
 
-// ---- POST https nativo com agent mTLS + timeout (não trava) ----
-function postNative(url, json) {
+// ---- POST https nativo + timeout + logs de tempo (não trava) ----
+// useAgent: passe o agent mTLS, ou null para TLS simples (sem cert cliente).
+function postNative(url, json, useAgent = agent, timeoutMs = Number(ADN_TIMEOUT_MS)) {
   return new Promise((resolve, reject) => {
     const data = Buffer.from(JSON.stringify(json));
     const u = new URL(url);
-    const req = https.request(
-      {
-        hostname: u.hostname,
-        port: u.port || 443,
-        path: u.pathname + (u.search || ''),
-        method: 'POST',
-        agent,
-        timeout: Number(ADN_TIMEOUT_MS),
-        headers: { 'Content-Type': 'application/json', 'Content-Length': data.length },
-      },
-      (resp) => {
-        let buf = '';
-        resp.on('data', (c) => (buf += c));
-        resp.on('end', () => {
-          let parsed = {};
-          try { parsed = JSON.parse(buf || '{}'); }
-          catch { parsed = { raw: buf.slice(0, 2000) }; }
-          resolve({ status: resp.statusCode, body: parsed });
-        });
-      }
-    );
-    req.on('timeout', () => req.destroy(new Error(`timeout após ${ADN_TIMEOUT_MS}ms chamando a prefeitura`)));
-    req.on('error', reject);
+    const t0 = Date.now();
+    const el = () => `${Date.now() - t0}ms`;
+    const opts = {
+      hostname: u.hostname,
+      port: u.port || 443,
+      path: u.pathname + (u.search || ''),
+      method: 'POST',
+      timeout: timeoutMs,
+      headers: { 'Content-Type': 'application/json', 'Content-Length': data.length },
+    };
+    if (useAgent) opts.agent = useAgent;
+    const req = https.request(opts, (resp) => {
+      console.log(`[adn] resposta HTTP ${resp.statusCode} em ${el()} (mTLS=${!!useAgent})`);
+      let buf = '';
+      resp.on('data', (c) => (buf += c));
+      resp.on('end', () => {
+        let parsed = {};
+        try { parsed = JSON.parse(buf || '{}'); }
+        catch { parsed = { raw: buf.slice(0, 2000) }; }
+        resolve({ status: resp.statusCode, body: parsed, elapsedMs: Date.now() - t0 });
+      });
+    });
+    req.on('socket', (s) => {
+      s.on('lookup', () => console.log(`[adn] DNS ok ${el()}`));
+      s.on('connect', () => console.log(`[adn] TCP conectado ${el()}`));
+      s.on('secureConnect', () => console.log(`[adn] TLS handshake ok ${el()} (mTLS=${!!useAgent})`));
+    });
+    req.on('timeout', () => { console.error(`[adn] TIMEOUT ${el()}`); req.destroy(new Error(`timeout após ${timeoutMs}ms chamando a prefeitura`)); });
+    req.on('error', (e) => { console.error(`[adn] ERRO ${el()}: ${e.message}`); reject(e); });
     req.write(data);
     req.end();
   });
@@ -145,6 +152,23 @@ app.use(express.json({ limit: '2mb' }));
 // health: 200 sempre que o processo está de pé; mostra status do certificado
 app.get('/health', (_req, res) =>
   res.json({ ok: true, certificado: agent ? 'ok' : 'erro', certErro, ambiente: ADN_URL }));
+
+// diagnóstico de conectividade com a prefeitura.
+// /diag        -> testa COM certificado cliente (mTLS)
+// /diag?mtls=0 -> testa SEM certificado cliente (TLS simples)
+// Envia um corpo dummy (será rejeitado pela regra de negócio), mas se retornar
+// QUALQUER status HTTP, o transporte funciona. Se travar/timeout, é o transporte.
+app.get('/diag', async (req, res) => {
+  const useMtls = req.query.mtls !== '0';
+  const dummy = zlib.gzipSync(Buffer.from('<x/>', 'utf8')).toString('base64');
+  const t0 = Date.now();
+  try {
+    const r = await postNative(ADN_URL, { dpsXmlGZipB64: dummy }, useMtls ? agent : null, 15000);
+    res.json({ mtls: useMtls, transporte: 'OK', status: r.status, elapsedMs: r.elapsedMs, resposta: JSON.stringify(r.body).slice(0, 400) });
+  } catch (e) {
+    res.json({ mtls: useMtls, transporte: 'FALHOU', erro: e.message, elapsedMs: Date.now() - t0 });
+  }
+});
 
 // recarrega o certificado sem reiniciar o container (após trocar o .pfx)
 app.post('/reload-cert', (req, res) => {
