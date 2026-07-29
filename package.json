@@ -1,0 +1,18 @@
+{
+  "name": "nfse-belem-signer",
+  "version": "1.0.0",
+  "description": "Microserviço de assinatura e emissão de NFS-e Belém (padrão Nacional/ADN)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dps": "node dps-builder.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "node-forge": "^1.3.1",
+    "xml-crypto": "^6.0.0"
+  }
+}

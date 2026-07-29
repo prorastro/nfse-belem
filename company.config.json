@@ -1,0 +1,40 @@
+{
+  "_comment": "Dados fiscais reais da PRORASTRO (fonte: portal NFS-e Belém + Asaas).",
+  "prestador": {
+    "cnpj": "58792244000134",
+    "im": "4948183",
+    "xNome": "PRORASTRO TECNOLOGIA E SERVICOS AUTOMOTIVOS LTDA",
+    "fone": "9184233388",
+    "email": "TRACKER.PRORASTRO@GMAIL.COM",
+    "opSimpNac": 3,
+    "regApTribSN": 1,
+    "regEspTrib": 0,
+    "endereco": {
+      "cMun": "1501402",
+      "cep": "66083495",
+      "logradouro": "RUA MARINHO",
+      "numero": "870",
+      "complemento": "CASA",
+      "bairro": "SACRAMENTA"
+    }
+  },
+  "emissao": {
+    "cLocEmi": "1501402",
+    "serie": "900",
+    "verAplic": "PRORASTRO-1.0",
+    "tpEmit": 1,
+    "municipioConvenioAtivo": true
+  },
+  "servicoPadrao": {
+    "_nota_cTribNac": "MENSALIDADE. Tecnicamente correto = 110501 (LC116 11.05, monitoramento/rastreamento de veiculos, ISS incide em Belem). POReM 11.05 NAO esta no cadastro municipal da PRORASTRO (portal Belem so tem itens 01.07/01.08/01.09 e 14.01/14.06). Por isso mantido 010301 (LC116 1.03), que e o que o Asaas ja emite e esta cadastrado. Trocar para 110501 assim que a atividade 11.05 for incluida no cadastro (confirmar com contador).",
+    "cTribNac": "010301",
+    "_cTribNac_correto_quando_cadastrar": "110501",
+    "_cTribNac_instalacao_avulsa": "140601 (instalacao) ou 140101 (manutencao)",
+    "xDescServ": "Servico de rastreamento e monitoramento veicular - mensalidade",
+    "cNBS": null,
+    "tribISSQN": 1,
+    "tpRetISSQN": 1,
+    "pTotTribSN": 6.0,
+    "_nota_pTotTribSN": "Percentual aproximado total dos tributos do Simples Nacional (Anexo III). Ajustar conforme faixa de faturamento (RBT12)."
+  }
+}

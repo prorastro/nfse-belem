@@ -1,0 +1,10 @@
+node_modules
+npm-debug.log
+spec
+cert
+*.pfx
+*.p12
+.env
+.git
+PRORASTRO - Emissao NFSe.json
+README.md

@@ -1,0 +1,27 @@
+services:
+  nfse-signer:
+    build: .
+    # image: nfse-belem-signer:latest   # (EasyPanel pode buildar direto do repo)
+    restart: unless-stopped
+    environment:
+      TZ: America/Belem
+      PORT: 3005
+      # caminho do certificado A1 DENTRO do container (montado abaixo)
+      PFX_PATH: /cert/prorastro.pfx
+      PFX_PASS: ${PFX_PASS}
+      API_TOKEN: ${NFSE_SIGNER_TOKEN}
+      # homologação (troque para produção quando validar):
+      ADN_URL: https://homol-nfse2.belem.pa.gov.br/notafiscal-adn-ws/api/adn/dps
+      ADN_TIMEOUT_MS: 60000
+      # TLS_INSECURE: "1"   # descomente só se a homologação der erro de cadeia TLS
+    volumes:
+      # coloque o .pfx no host em ./cert/prorastro.pfx (somente leitura)
+      - ./cert:/cert:ro
+    ports:
+      - "3005:3005"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3005/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
